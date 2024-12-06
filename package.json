@@ -1,0 +1,23 @@
+{
+  "name": "game-server",
+  "version": "1.0.0",
+  "description": "A Node.js WebSocket-based game server that handles game logic, player connections, score updates.",
+  "main": "gameServer.js",
+  "scripts": {
+    "start": "node gameServer.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Node.js",
+    "WebSocket",
+    "game server",
+    "real-time",
+    "score update"
+  ],
+  "author": "liuchuang",
+  "license": "MIT",
+  "dependencies": {
+    "redis": "^4.7.0",
+    "ws": "^8.18.0"
+  }
+}

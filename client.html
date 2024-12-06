@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket 游戏客户端</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #messages {
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 300px;
+            margin: 0 auto;
+        }
+
+        #messageList {
+            list-style-type: none;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>游戏客户端</h1>
+    <div id="messages">
+        <ul id="messageList"></ul>
+    </div>
+    <button id="updateScoreButton">更新分数</button>
+    <script>
+        const roleNames = {
+            "warrior": "战士",
+            "mage": "法师",
+            "assassin": "刺客",
+            "summoner": "召唤师",
+            "archer": "弓箭手"
+        };
+        const webSocketServerUrl = 'ws://localhost:8080';
+        const socket = new WebSocket(webSocketServerUrl);
+
+        const messageList = document.getElementById('messageList');
+
+        socket.onopen = function () {
+            console.log('已连接到游戏服务器');
+            const joinMessage = { type: 'join_game' };
+            socket.send(JSON.stringify(joinMessage));
+        };
+
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            console.log('收到服务器消息:', data);
+            switch (data.type) {
+                case 'join_game_success':
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `成功加入游戏，分配角色为: ${roleNames[data.role]}`;
+                    messageList.appendChild(listItem);
+                    break;
+                case 'score_update':
+                    const scoreListItem = document.createElement('li');
+                    scoreListItem.textContent = `玩家 ${data.playerId} 的分数更新为 ${data.score}`;
+                    messageList.appendChild(scoreListItem);
+                    break;
+                default:
+                    console.log('未知消息类型');
+            }
+        };
+
+        socket.onerror = function (error) {
+            console.log('WebSocket连接出错:', error);
+        };
+
+        socket.onclose = function () {
+            console.log('与游戏服务器的连接已断开');
+        };
+
+        // 走http登录 拿到游戏唯一用户ID
+        const currentUserId = Math.floor(Math.random()*(100000 - 10000 + 1))+10000;
+
+        const updateScoreButton = document.getElementById('updateScoreButton');
+        updateScoreButton.addEventListener('click', function () {
+            const scoreMessage = {
+                type: 'update_score',
+                playerId: currentUserId,
+                score: Math.floor(Math.random() * 100)
+            };
+            socket.send(JSON.stringify(scoreMessage));
+        });
+
+    </script>
+</body>
+
+</html>
