@@ -95,6 +95,9 @@
                     currentRankListItem.textContent = `您的当前排名为 ${data.rank}`;
                     messageList.appendChild(currentRankListItem);
                     break;
+                case 'heartbeat':
+                    const heartbeatResponse = JSON.stringify({ type: 'heartbeat_response' });
+                    socket.send(heartbeatResponse);
                 default:
                     console.log('未知消息类型');
             }

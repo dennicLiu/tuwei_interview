@@ -7,6 +7,9 @@ const clientNameMap = {};
 let clientCount = 0;
 
 export const playerSocketMap = new Map();
+const clientHeartbeatTimers = new Map();
+
+const HEARTBEAT_INTERVAL = 10000; 
 
 wss.on('connection', (ws) => {
     clients.push(ws);
@@ -14,10 +17,11 @@ wss.on('connection', (ws) => {
     clientNameMap[ws] = assignedName;
     console.log('新客户端连接，分配用户名:', assignedName);
     playerSocketMap.set(assignedName, ws);
-
+    startHeartbeat(ws, assignedName);
     ws.on('message', async(message) => {
         const data = JSON.parse(message);
         console.log('收到客户端消息:', data);
+        resetHeartbeat(ws);
         switch (data.type) {
             case 'join_game':
                 const role = assignRole();
@@ -54,8 +58,19 @@ wss.on('connection', (ws) => {
         if (index !== -1) {
             clients.splice(index, 1);
             delete clientNameMap[ws];
+            clearHeartbeat(ws);
         }
         console.log('客户端断开连接');
+    });
+
+    ws.on('error', (err) => {
+        console.log('客户端网络异常:', err);
+        const index = clients.indexOf(ws);
+        if (index!== -1) {
+            clients.splice(index, 1);
+            delete clientNameMap[ws];
+            clearHeartbeat(ws);
+        }
     });
 });
 
@@ -127,5 +142,35 @@ function notifyCurrentRank(playerId, rank) {
     const ws = playerSocketMap.get(playerId);
     if (ws) {
         ws.send(JSON.stringify({ type: 'current_rank', rank: rank }));
+    }
+}
+
+function startHeartbeat(ws, clientName) {
+    const heartbeatTimer = setInterval(() => {
+        console.log(`发送心跳包给客户端 ${clientName}`, ws.readyState)
+        if (ws.readyState === WebSocket.OPEN) {
+            const heartbeatMessage = JSON.stringify({ type: 'heartbeat' });
+            ws.send(heartbeatMessage);
+            console.log(`向客户端 ${clientName} 发送心跳包`);
+        } else {
+            clearHeartbeat(ws);
+        }
+    }, HEARTBEAT_INTERVAL);
+    clientHeartbeatTimers.set(ws, heartbeatTimer);
+}
+
+function resetHeartbeat(ws) {
+    const timer = clientHeartbeatTimers.get(ws);
+    if (timer) {
+        clearTimeout(timer);
+        startHeartbeat(ws, clientNameMap[ws]);
+    }
+}
+
+function clearHeartbeat(ws) {
+    const timer = clientHeartbeatTimers.get(ws);
+    if (timer) {
+        clearInterval(timer);
+        clientHeartbeatTimers.delete(ws);
     }
 }
