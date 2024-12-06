@@ -1,10 +1,10 @@
-const { updateScore, getRankingsByPage, getPlayerCurrentRank, getPlayerNearbyRank } = require('./rankings');
+import { updateScore, getRankingsByPage, getPlayerCurrentRank, getPlayerNearbyRank } from './rankings.js';
 
 (async () => {
-    await updateScore('player1', 100);
-    await updateScore('player2', 120);
-    await updateScore('player3', 110);
-    await updateScore('player4', 110);
+    await updateScore('player1', 100000);
+    await updateScore('player2', 120000);
+    await updateScore('player3', 110000);
+    await updateScore('player4', 110000);
 
 })();
 

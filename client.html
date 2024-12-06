@@ -30,6 +30,10 @@
         <ul id="messageList"></ul>
     </div>
     <button id="updateScoreButton">更新分数</button>
+    <button id="queryRankButton">查询排行榜数据</button>
+    <button id="queryNearByRank">附近10名</button>
+    <button id="queryCurrentRank">查询当前排名</button>
+
     <script>
         const roleNames = {
             "warrior": "战士",
@@ -40,6 +44,7 @@
         };
         const webSocketServerUrl = 'ws://localhost:8080';
         const socket = new WebSocket(webSocketServerUrl);
+        let currentUserId = "";
 
         const messageList = document.getElementById('messageList');
 
@@ -54,14 +59,41 @@
             console.log('收到服务器消息:', data);
             switch (data.type) {
                 case 'join_game_success':
+                    currentUserId = data.playerId;
                     const listItem = document.createElement('li');
-                    listItem.textContent = `成功加入游戏，分配角色为: ${roleNames[data.role]}`;
+                    listItem.textContent = `成功加入游戏，分配角色为: ${roleNames[data.role]}， 您的id: ${data.playerId}`;
                     messageList.appendChild(listItem);
                     break;
                 case 'score_update':
                     const scoreListItem = document.createElement('li');
                     scoreListItem.textContent = `玩家 ${data.playerId} 的分数更新为 ${data.score}`;
                     messageList.appendChild(scoreListItem);
+                    break;
+                case 'rank_change_notification':
+                    const rankListItem = document.createElement('li');
+                    rankListItem.textContent = data.content;
+                    messageList.appendChild(rankListItem);
+                    break;
+                case 'rank_list':
+                    const rankList = JSON.parse(data.rankData);
+                    for (const rankItem of rankList) {
+                        const rankListItem = document.createElement('li');
+                        rankListItem.textContent = `玩家 ${rankItem.value} 的分数为 ${rankItem.score}`;
+                        messageList.appendChild(rankListItem);
+                    }
+                    break;
+                case 'nearby_rank_list':
+                    const nearby_rank_list = JSON.parse(data.rankData);
+                    for (const rankItem of nearby_rank_list) {
+                        const rankListItem = document.createElement('li');
+                        rankListItem.textContent = `附近玩家 ${rankItem.value} 的分数为 ${rankItem.score}`;
+                        messageList.appendChild(rankListItem);
+                    }
+                    break;
+                case 'current_rank':
+                    const currentRankListItem = document.createElement('li');
+                    currentRankListItem.textContent = `您的当前排名为 ${data.rank}`;
+                    messageList.appendChild(currentRankListItem);
                     break;
                 default:
                     console.log('未知消息类型');
@@ -76,17 +108,42 @@
             console.log('与游戏服务器的连接已断开');
         };
 
-        // 走http登录 拿到游戏唯一用户ID
-        const currentUserId = Math.floor(Math.random()*(100000 - 10000 + 1))+10000;
-
         const updateScoreButton = document.getElementById('updateScoreButton');
         updateScoreButton.addEventListener('click', function () {
             const scoreMessage = {
                 type: 'update_score',
                 playerId: currentUserId,
-                score: Math.floor(Math.random() * 100)
+                score: Math.floor(Math.random() * (1000000 - 100000 + 1)) + 100000
             };
             socket.send(JSON.stringify(scoreMessage));
+        });
+
+        const queryRankButton = document.getElementById('queryRankButton');
+        queryRankButton.addEventListener('click', function () {
+            const rankQueryMessage = {
+                type: 'query_rank_list',
+                playerId: currentUserId
+            };
+            socket.send(JSON.stringify(rankQueryMessage));
+        });
+
+        const queryNearByRank = document.getElementById('queryNearByRank');
+        queryNearByRank.addEventListener('click', function () {
+            const rankQueryMessage = {
+                type: 'query_nearby_rank',
+                playerId: currentUserId
+            };
+            socket.send(JSON.stringify(rankQueryMessage));
+        });
+
+
+        const queryCurrentRank = document.getElementById('queryCurrentRank');
+        queryCurrentRank.addEventListener('click', function () {
+            const rankQueryMessage = {
+                type: 'query_current_rank',
+                playerId: currentUserId
+            };
+            socket.send(JSON.stringify(rankQueryMessage));
         });
 
     </script>
