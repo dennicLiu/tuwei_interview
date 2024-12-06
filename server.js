@@ -9,7 +9,7 @@ let clientCount = 0;
 export const playerSocketMap = new Map();
 const clientHeartbeatTimers = new Map();
 
-const HEARTBEAT_INTERVAL = 10000; 
+const HEARTBEAT_INTERVAL = 10000;
 
 wss.on('connection', (ws) => {
     clients.push(ws);
@@ -18,10 +18,9 @@ wss.on('connection', (ws) => {
     console.log('新客户端连接，分配用户名:', assignedName);
     playerSocketMap.set(assignedName, ws);
     startHeartbeat(ws, assignedName);
-    ws.on('message', async(message) => {
+    ws.on('message', async (message) => {
         const data = JSON.parse(message);
         console.log('收到客户端消息:', data);
-        resetHeartbeat(ws);
         switch (data.type) {
             case 'join_game':
                 const role = assignRole();
@@ -35,19 +34,23 @@ wss.on('connection', (ws) => {
                 broadcastScoreUpdate(data.playerId, data.score);
                 break;
             case 'query_rank_list':
-                const rankList = await getRankingsByPage();       
-                notifyRankList(data.playerId,rankList)
+                const rankList = await getRankingsByPage();
+                notifyRankList(data.playerId, rankList)
                 break;
             case 'query_nearby_rank':
                 const nearbyRankList = await getPlayerNearbyRank(data.playerId);
                 console.log('查询附近排名:', nearbyRankList);
-                notifyNearByRankList(data.playerId,nearbyRankList)
-                break;    
+                notifyNearByRankList(data.playerId, nearbyRankList)
+                break;
             case 'query_current_rank':
                 const currentRank = await getPlayerCurrentRank(data.playerId);
-                notifyCurrentRank(data.playerId,currentRank)
+                notifyCurrentRank(data.playerId, currentRank)
                 console.log('查询当前排名:', currentRank);
-                break;    
+                break;
+
+            case 'heartbeat_response':
+                resetHeartbeat(ws);
+                break;
             default:
                 console.log('未知消息类型');
         }
@@ -66,7 +69,7 @@ wss.on('connection', (ws) => {
     ws.on('error', (err) => {
         console.log('客户端网络异常:', err);
         const index = clients.indexOf(ws);
-        if (index!== -1) {
+        if (index !== -1) {
             clients.splice(index, 1);
             delete clientNameMap[ws];
             clearHeartbeat(ws);
@@ -76,7 +79,7 @@ wss.on('connection', (ws) => {
 
 function broadcast(message) {
     clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
+        if (client.readyState === WebSocket.default.OPEN) {
             client.send(message);
         }
     });
@@ -147,8 +150,8 @@ function notifyCurrentRank(playerId, rank) {
 
 function startHeartbeat(ws, clientName) {
     const heartbeatTimer = setInterval(() => {
-        console.log(`发送心跳包给客户端 ${clientName}`, ws.readyState)
-        if (ws.readyState === WebSocket.OPEN) {
+        if (ws.readyState == WebSocket.default.OPEN) {
+            console.log(`发送心跳包给客户端 ${clientName}`, ws.readyState)
             const heartbeatMessage = JSON.stringify({ type: 'heartbeat' });
             ws.send(heartbeatMessage);
             console.log(`向客户端 ${clientName} 发送心跳包`);
